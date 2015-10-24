@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>STLPuzzle Maker (Using OpenJsCad)</title>  
+	<style>
+	body {
+	  font: 14px/20px 'Helvetica Neue Light', HelveticaNeue-Light, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+	  max-width: 820px;
+	  margin: 0 auto;
+	  padding: 10px;
+	}
+
+	pre, code, textarea {
+	  font: 12px/20px Monaco, monospace;
+	  border: 1px solid #CCC;
+	  border-radius: 3px;
+	  background: #F9F9F9;
+	  padding: 0 3px;
+	  color: #555;
+	}
+	pre, textarea {
+	  padding: 10px;
+	  width: 100%;
+	}
+	textarea {
+	  height: 200px;
+	}
+	textarea:focus {
+	  outline: none;
+	}
+
+	canvas { cursor: move; }
+	</style>
+	<link rel="stylesheet" href="openjscad.css" type="text/css">
+	<script src="lib/three.min.js"></script>
+	<script src="lib/orbitcontrols.js"></script>
+	<!-- fallback if no WebGL -->
+	<script src="lib/projector.js"></script>
+	<script src="lib/canvasrenderer.js"></script>
+	<script src="lib/jquery-2.1.3.min.js"></script>
+	<script src="src/csg.js"></script>
+	<script src="src/threecsg.js"></script>
+	<script src="src/openjscad.js"></script>
+	<script src="src/formats.js"></script>
+	<script>
+		var gProcessor=null;
+
+		// Show all exceptions to the user:
+		OpenJsCad.AlertUserOfUncaughtExceptions();
+
+		function onload()
+		{
+		  gProcessor = new OpenJsCad.Processor(document.getElementById("viewer"));
+		  updateSolid();
+		  $('#cb_faces').trigger('click');
+		  $('#cb_lines').trigger('click');
+		}
+
+		function updateSolid()
+		{
+		  gProcessor.setJsCad(document.getElementById('code').value);
+		}
+	</script>
+</head>
+<body onload="onload()">
+	<h1>STLPuzzle Maker</h1>
+	<span>By </span><a href="http://github.com/purelogiq">Israel M.</a>
+	<p>This is a tutorial on how you can make your own lazer cut puzzle using OpenJsCad!
+	 While the name of this page is STL Puzzle, OpenJsCad allows to create regular DXF files as well.</p>
+	<p>While on the topic of OpenJsCad, I want to give credit to the creators of the library. Most of the fancy 3d rendering on this
+	page and also much of the structure for this html page is derived from the project source at <a href="https://github.com/joostn/OpenJsCad/tree/gh-pages">OpenJsCad on GitHub</a>.</p>
+	<p>Lets get started making the puzzle!</p>
+	<br /><br />
+	 
+	<h1>1. Preface</h1>
+	<p>The goal of this tutorial is to make a puzzle that looks like this:</p>
+	<img src="img/puzzle_with_case.jpg" width="80%" />
+	<p>To do so, we need 3 parts</p>
+	<ol>
+		<li>A backboard plate for the puzzle pieces to lay on</li>
+		<li>A plate with the puzzle pieces cut out</li>
+		<li>A clear cover to put on top so that the puzzle can be on display when finished</li>
+	</ol>
+	<br /><br />
+	
+	<h1>2. Getting Setup</h1>
+	<p>I have provided the backboard piece and clear cover as solidwork parts or regular dxf files. 
+	Note: These pieces are designed to contain a puzzle 10 inces in diameter.</p>
+	<a href="case.SLDPRT">The backboard and clear cover configurations as a SolidWorks part</a><br /> 
+	<a href="case_final.dxf">The backboard piece dxf</a><br />
+	<a href="case_clear_final.dxf">The clear cover dxf</a><br />
+	
+	<p>Other things you will need are as follows</p>
+	<ul>
+		<li>Access to a laser cutter</li>
+		<li>Sheets of acryllic or wood to cut</li>
+		<li><a href="https://www.3ds.com/products-services/draftsight-cad-software/free-download/">DraftSight</a></li>
+		<li><a href="http://meshlab.sourceforge.net/">MeshLab</a></li>
+		<li><a href="https://inkscape.org/en/download/">InkScape</a></li>
+	</ul>
+	<br /><br />
+	
+	<h1>3. Creating the puzzle cutout</h1>
+	<p>Below is a simple OpenJsCad rendering of an extruded circle. This is enough to generate an STL file which has
+	a nice triangle mesh pattern. There are a few parameters to play with below, but you can also just write your own
+	code to create an extruded shape.<p>
+	<p>Once you are done playing around, download the STL file and continue to step 4. If you created a 2d drawing, download 
+	the DXF file and skip to step 5.</p>
+
+	<div id="viewer"></div>
+	<p>For tips see: <a href="https://github.com/Spiritdude/OpenJSCAD.org/wiki/User-Guide">this wiki</a> or <a href="http://joostn.github.io/OpenJsCad/">the main OpenJsCad demo</a></p>
+	<textarea id="code">
+		function getParameterDefinitions() {
+		  return [
+			{ name: 'radius', caption: 'Radius (inches)', type: 'float', default: 5 },
+			{ name: 'detail', caption: 'Detail', type: 'int', default: 10 }
+		  ];
+		}
+
+		function main(params){
+			return CAG.circle({
+				center: [0, 0], 
+				radius: params.radius, 
+				resolution: params.detail
+			}).extrude({offset: [0, 0, 0.1]});
+		}
+	</textarea>
+	<input type="submit" value="Update" onclick="updateSolid(); return false;">
+	<br><br>
+	
+	<h1>4. Coverting the STL to a DXF</h1>
+	<ol>
+		<li>Open the STL file in MeshLab and save it as a DXF file.</li>
+		<li>Copy the backboard case .dxf file. Name it puzzle.dxf</li>
+		<li>Open both DXF files in draft sight.</li>
+		<li>In DraftSight, copy the dxf geometry from the stl dxf file and paste it in the backboard case dxf. Make sure to paste it 
+		somewhere outside of the backboard case geometry.</li>
+		<li>Select the stl dxf geometry and color it a different color, such as red. This is so that it can be cut before the backboard is cut.</li>
+		<li>Using the move tool, click on the center of the stl dxf gemotry, then click on the center of the backboard case.<br />
+		This should move the stl dxf geometry to the center of the backboard case geometry.</li>
+		<li>Save the file (it should be called puzzle.dxf)</li>
+	</ol>
+	<br><br>
+	
+	<h1>5. Adding an engraving to the puzzle</h1>
+	<ol>
+		<li>Find some image that you want to engrave onto the puzzle. Images that are very simple with obvious outlines work best.<br />
+		The example puzzle is using <a href="http://www.zeofire.com/wp-content/uploads/2014/06/10-sunflower-flowers-coloring-pages-printable.jpg">this image</a>.</li>
+		<li>Open the image in inkscape and using the Object>Transform tool, transform the dimensions to 9in x 9in.</li>
+		<li>Using the Path>Trace Bitmap tool, convert the image to a vector image. You may have to play around with the settings and use the preview
+		to get everything just right</li>
+		<li>Delete the underlying bitmap image so that only the vector image is left</li>
+		<li>Save the file as a DXF</li>
+		<li>If the DXF file outputed by InkScape doesn't work very well. Try an online tool such as <a href="http://online.rapidresizer.com/tracer.php">this</a>.</li>
+		<li>Like Step 4, add the image dxf to the puzzle dxf file. Make sure to color it a entirely different color.</li>
+		<li>If everthing went well in your puzzle.dxf should look like this: <br />
+		<img src="img/combined_dxf.png" width="80%" /></li>
+	</ol>
+	<br><br>
+	
+	<h1>6. Cut!</h1>
+	<ul>
+		<li>Import the combinded dxf file to your lazer cutter's tooling program and cut away!</li>
+		<li>First cut the backboard case, then the clear case so that you become familiar with the sizes you want.</li>
+		<li>When cutting the puzzle, the cut order should be: 1. Picture Engraving, 2. Screw holes, 3. Puzzle Cutout, 4. Frame Circle Cutout</li>
+		<li>Assemble the puzzle with screws and nuts, screw length will vary depending on the thickness of the material you used.
+		 You will need longer screws for the cover. Also when screwing in the cover, do not tighten the screws too much if you want
+		 the pieces inside to be able to move around a little.</li>
+	</ul>
+	
+	<br />
+	<img src="img/puzzle.jpg" width="80%"/>
+
+</body>
+</html>
